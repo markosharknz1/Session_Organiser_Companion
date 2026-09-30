@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    name: Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: The files a release needs are present
+        run: |
+          test -f "Game Scheduler Companion.cmd"
+          test -f "Change main computer.cmd"
+          test -f connect.html
+          test -f app_icon.ico
+      - name: The connect page's script parses
+        run: |
+          node -e "
+            const html = require('fs').readFileSync('connect.html', 'utf8');
+            const m = /<script>([\s\S]*?)<\/script>/.exec(html);
+            if (!m) { console.error('no inline script found'); process.exit(1); }
+            new Function(m[1]);
+            console.log('connect.html script OK (' + m[1].length + ' chars)');
+          "
+      - name: Nothing but batch files and a web page ships
+        run: |
+          # No PowerShell, no Windows Script Host, no executables - see SECURITY.md.
+          ! git archive --format=tar HEAD | tar -t | grep -Ei '\.(ps1|psm1|vbs|vbe|wsf|js|jse|hta|exe|dll|msi|lnk)$'
+          git archive --format=tar HEAD | tar -t
+      - name: The connect page loads nothing from the internet
+        run: |
+          # no external scripts, styles, images or links - only the computer the user names
+          ! grep -Ei '(src|href)=.https?://' connect.html

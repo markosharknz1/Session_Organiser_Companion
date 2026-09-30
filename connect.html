@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Game Scheduler Companion</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="app_icon.ico">
+<!--
+  Game Scheduler Companion - the connect screen.
+
+  This page is all the companion is: it asks which computer on the club's
+  network is running Game Scheduler, checks it can be reached, remembers
+  the answer in this window's own browser storage, and then hands the
+  window over to that computer's Check-in page. Every later start goes
+  straight there.
+
+  Nothing is stored on this computer except that one name. There is no
+  database here and no copy of the club's data - the main computer keeps
+  the only one. Nothing on this page talks to the internet.
+-->
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+         background: #f3f4f6; color: #1f2937; font: 16px/1.5 "Segoe UI", system-ui, sans-serif; }
+  .card { width: min(560px, 92vw); background: #fff; border: 1px solid #e5e7eb; border-radius: 14px;
+          padding: 30px 34px 32px; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08); }
+  h1 { font-size: 22px; margin: 0 0 6px; }
+  p { margin: 0 0 12px; }
+  .muted { color: #6b7280; font-size: 14px; }
+  label { display: block; font-weight: 600; margin: 18px 0 6px; }
+  input[type=text] { width: 100%; font: inherit; padding: 10px 12px; border: 1px solid #9ca3af; border-radius: 8px; }
+  input[type=text]:focus { outline: 2px solid #2563eb; border-color: #2563eb; }
+  .buttons { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+  button { font: inherit; padding: 9px 20px; border-radius: 8px; border: 1px solid #9ca3af; background: #f9fafb; cursor: pointer; }
+  button.primary { background: #2563eb; border-color: #2563eb; color: #fff; font-weight: 600; }
+  button:disabled { opacity: .55; cursor: default; }
+  .error { color: #b91c1c; font-size: 14px; margin: 12px 0 0; white-space: pre-line; }
+  .spinner { width: 22px; height: 22px; border: 3px solid #dbeafe; border-top-color: #2563eb; border-radius: 50%;
+             animation: spin .9s linear infinite; display: inline-block; vertical-align: middle; margin-right: 10px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  ul { margin: 6px 0 0; padding-left: 20px; }
+  li { margin-bottom: 3px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="card">
+  <section id="connecting" hidden>
+    <h1><span class="spinner"></span>Connecting</h1>
+    <p id="connecting-text" class="muted"></p>
+    <div class="buttons"><button id="connecting-change">Use a different computer</button></div>
+  </section>
+
+  <section id="setup" hidden>
+    <h1>Game Scheduler Companion</h1>
+    <p class="muted">This computer opens the club's Game Scheduler, which runs on the club's main computer. Nothing is installed or stored here.</p>
+
+    <label for="host">Main computer's name or address</label>
+    <input type="text" id="host" spellcheck="false" autocomplete="off" placeholder="e.g. CLUB-PC or 192.168.1.20">
+    <p class="muted" style="margin-top:8px;">It's shown on the main computer under <b>Settings &gt; Club details &gt; Other computers</b>.</p>
+    <p class="error" id="error" hidden></p>
+    <div id="help" hidden>
+      <p class="muted" style="margin-top:12px;">Things to check on the main computer:</p>
+      <ul class="muted">
+        <li>Game Scheduler is open.</li>
+        <li><b>Settings &gt; Club details &gt; Other computers</b> is ticked, and Game Scheduler has been restarted since.</li>
+        <li>Windows Firewall was allowed for "Node.js JavaScript Runtime" when it asked.</li>
+        <li>Both computers are on the same network. If the name doesn't work, try the number address shown on that Settings page.</li>
+      </ul>
+    </div>
+    <div class="buttons"><button id="go" class="primary">Connect</button></div>
+  </section>
+</div>
+<script>
+(function () {
+  var KEY = 'game-scheduler-companion-host';
+  var DEFAULT_PORT = 4000;
+  var $ = function (id) { return document.getElementById(id); };
+
+  function saved() { try { return localStorage.getItem(KEY) || ''; } catch (e) { return ''; } }
+  function remember(host) { try { localStorage.setItem(KEY, host); } catch (e) { /* still connects; will just ask again next time */ } }
+
+  // "CLUB-PC", "192.168.1.20", "club-pc:4000", "http://club-pc:4000/checkin.html" -> "club-pc" / "club-pc:4000"
+  function normalise(text) {
+    var t = String(text || '').trim().replace(/^https?:\/\//i, '').replace(/\/.*$/, '');
+    if (!/^[A-Za-z0-9._-]+(:\d{1,5})?$/.test(t)) return null;
+    return t;
+  }
+  function baseUrl(host) { return 'http://' + (host.indexOf(':') === -1 ? host + ':' + DEFAULT_PORT : host); }
+
+  // Reachability check that needs no special permission from the other
+  // computer: load its club icon as an image. Game Scheduler always serves one.
+  function reachable(host, timeoutMs) {
+    return new Promise(function (resolve) {
+      var img = new Image();
+      var done = false;
+      var finish = function (ok) { if (!done) { done = true; resolve(ok); } };
+      img.onload = function () { finish(true); };
+      img.onerror = function () { finish(false); };
+      setTimeout(function () { finish(false); }, timeoutMs);
+      img.src = baseUrl(host) + '/api/branding/icon?companion=' + Date.now();
+    });
+  }
+
+  var cancelled = false;
+  function showSetup(prefill, message) {
+    cancelled = true;
+    $('connecting').hidden = true;
+    $('setup').hidden = false;
+    $('host').value = prefill || '';
+    $('error').hidden = !message;
+    $('error').textContent = message || '';
+    $('help').hidden = !message;
+    $('go').disabled = false;
+    $('host').focus();
+  }
+
+  async function connect(host) {
+    cancelled = false;
+    $('setup').hidden = true;
+    $('connecting').hidden = false;
+    $('connecting-text').textContent = 'Looking for Game Scheduler on ' + host + ' ...';
+    var ok = await reachable(host, 6000);
+    if (cancelled) return;
+    if (!ok) {
+      showSetup(host, "Couldn't reach Game Scheduler on " + host + '.');
+      return;
+    }
+    remember(host);
+    location.replace(baseUrl(host) + '/checkin.html');
+  }
+
+  $('go').addEventListener('click', function () {
+    var host = normalise($('host').value);
+    if (!host) { showSetup($('host').value, 'Type the computer name or its number address, for example CLUB-PC or 192.168.1.20.'); $('help').hidden = true; return; }
+    $('go').disabled = true;
+    connect(host);
+  });
+  $('host').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('go').click(); });
+  $('connecting-change').addEventListener('click', function () { showSetup(saved(), ''); });
+
+  // "#setup" (Change main computer.cmd) always shows the form; "#host=NAME"
+  // (a name passed to the .cmd) connects to that computer and remembers it.
+  var params = new URLSearchParams(location.hash.replace(/^#/, ''));
+  var fromLauncher = normalise(params.get('host'));
+  if (params.has('setup')) showSetup(saved(), '');
+  else if (fromLauncher) connect(fromLauncher);
+  else if (normalise(saved())) connect(normalise(saved()));
+  else showSetup('', '');
+})();
+</script>
+</body>
+</html>
