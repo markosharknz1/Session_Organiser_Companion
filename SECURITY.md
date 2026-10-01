@@ -32,9 +32,10 @@ no connection to the internet.
 ## What to be aware of
 
 Letting a second computer in means turning on *Allow other devices on this
-network* on the main computer. Game Scheduler has no sign-in, so while that
-is on, **anyone on the same network can open it** - the Check-in page, the
-player list, and Settings. Traffic between the computers is not encrypted.
+network* on the main computer and setting an **access PIN** there. Every
+other device must enter that PIN once before it can open anything; the main
+computer's own window is never asked. Traffic between the computers is not
+encrypted.
 
 So:
 

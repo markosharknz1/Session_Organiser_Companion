@@ -1,10 +1,14 @@
+## Game Scheduler Companion v1.0.1
+
+- README and SECURITY updated for the access PIN introduced in Game Scheduler v1.0.16: other devices enter the club's PIN once, then stay signed in. No change to the Companion's files themselves.
+
 ## Game Scheduler Companion v1.0.0
 
 Lets a second computer use the club's [Game Scheduler](https://github.com/markosharknz1/Session_Organiser) - a second check-in desk, or a TV showing the courts. It opens the main computer's Game Scheduler over the club network; it has no database and keeps no copy of the club's data.
 
 ### Installing
 
-**On the main computer (once):** in Game Scheduler v1.0.15 or later, go to **Settings > Club details > Other computers**, tick **Allow other devices on this network**, save, and restart Game Scheduler. Click **Allow** when Windows Firewall asks. The page then shows the computer's name.
+**On the main computer (once):** in Game Scheduler v1.0.16 or later, go to **Settings > Club details > Other computers**, tick **Allow other devices on this network**, set an **access PIN**, save, and restart Game Scheduler. Click **Allow** when Windows Firewall asks. The page then shows the computer's name.
 
 **On the second computer:**
 

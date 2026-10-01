@@ -23,7 +23,7 @@ main computer is off, there is nothing for it to show.
 
 ## What you need
 
-- Game Scheduler **v1.0.15 or later** running on the main computer.
+- Game Scheduler **v1.0.16 or later** running on the main computer.
 - Both computers on the same network (the club's wifi or a cable).
 - Microsoft Edge or Google Chrome on the second computer (Edge comes with
   Windows).
@@ -33,8 +33,8 @@ main computer is off, there is nothing for it to show.
 **On the main computer (once):**
 
 1. Open Game Scheduler and go to **Settings > Club details > Other computers**.
-2. Tick **Allow other devices on this network**, click Save, then close Game
-   Scheduler and open it again.
+2. Tick **Allow other devices on this network**, click Save, set an **access
+   PIN** (4 to 8 digits), then close Game Scheduler and open it again.
 3. Windows asks whether to let "Node.js JavaScript Runtime" through the
    firewall - click **Allow**.
 4. The same Settings page now shows the computer's name to use, for example
@@ -50,6 +50,8 @@ main computer is off, there is nothing for it to show.
 3. Extract it somewhere it can stay, such as `C:\Apps\Game_Scheduler_Companion`.
 4. Double-click **`Game Scheduler Companion.cmd`**, type the main computer's
    name, and click **Connect**.
+5. Enter the club's access PIN when asked (once - this computer stays signed
+   in until the PIN is changed).
 
 It opens the Check-in page and remembers the main computer, so from then on a
 double-click goes straight in. For a desktop icon, right-click
@@ -65,6 +67,8 @@ On the main computer, check that:
 - Game Scheduler is open.
 - **Settings > Club details > Other computers** is ticked and says **On**. If
   it says "not active yet", close Game Scheduler and open it again.
+- An access PIN has been set on that page - without one, other devices are
+  refused and the Companion shows a notice saying so.
 - Windows Firewall was allowed when it asked. If you clicked Cancel, open
   *Windows Security > Firewall & network protection > Allow an app through
   firewall* and tick "Node.js JavaScript Runtime" for Private networks.
